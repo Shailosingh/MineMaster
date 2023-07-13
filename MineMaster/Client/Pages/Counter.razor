@@ -1,0 +1,33 @@
+﻿@page "/counter"
+
+<PageTitle>Counter</PageTitle>
+
+<h1>Counter</h1>
+
+<p role="status">Current count: @currentCount</p>
+
+<button class="btn btn-primary" @onclick="IncrementCount" @onmousedown="ButtonHeldDown" @onmouseup="ButtonReleased" @onmouseout="ButtonReleased">@ButtonText</button>
+
+@code {
+    private int currentCount = 0;
+
+    public string ButtonText = "Click me";
+
+    [Parameter]
+    public int IncrementSize { get; set; } = 1;
+
+    private void IncrementCount()
+    {
+        currentCount += IncrementSize;
+    }
+
+    private void ButtonHeldDown(MouseEventArgs e)
+    {
+        ButtonText = "AHHHH, I'm being squished";
+    }
+
+    private void ButtonReleased(MouseEventArgs e)
+    {
+        ButtonText = "Click me";
+    }
+}
