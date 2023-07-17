@@ -21,4 +21,38 @@
     <ServiceWorker Include="wwwroot\service-worker.js" PublishedContent="wwwroot\service-worker.published.js" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="wwwroot\Images\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="wwwroot\Images\Display\0.png" />
+    <None Include="wwwroot\Images\Display\1.png" />
+    <None Include="wwwroot\Images\Display\2.png" />
+    <None Include="wwwroot\Images\Display\3.png" />
+    <None Include="wwwroot\Images\Display\4.png" />
+    <None Include="wwwroot\Images\Display\5.png" />
+    <None Include="wwwroot\Images\Display\6.png" />
+    <None Include="wwwroot\Images\Display\7.png" />
+    <None Include="wwwroot\Images\Display\8.png" />
+    <None Include="wwwroot\Images\Display\9.png" />
+    <None Include="wwwroot\Images\Grid\1.bmp" />
+    <None Include="wwwroot\Images\Grid\2.bmp" />
+    <None Include="wwwroot\Images\Grid\3.bmp" />
+    <None Include="wwwroot\Images\Grid\4.bmp" />
+    <None Include="wwwroot\Images\Grid\5.bmp" />
+    <None Include="wwwroot\Images\Grid\6.bmp" />
+    <None Include="wwwroot\Images\Grid\7.bmp" />
+    <None Include="wwwroot\Images\Grid\8.bmp" />
+    <None Include="wwwroot\Images\Grid\cell.bmp" />
+    <None Include="wwwroot\Images\Grid\flag.bmp" />
+    <None Include="wwwroot\Images\Grid\highlight.bmp" />
+    <None Include="wwwroot\Images\Grid\mine.bmp" />
+    <None Include="wwwroot\Images\Reset\dead.bmp" />
+    <None Include="wwwroot\Images\Reset\oFace.bmp" />
+    <None Include="wwwroot\Images\Reset\smile.bmp" />
+    <None Include="wwwroot\Images\Reset\smileClicked.bmp" />
+    <None Include="wwwroot\Images\Reset\sunglasses.bmp" />
+  </ItemGroup>
+
 </Project>

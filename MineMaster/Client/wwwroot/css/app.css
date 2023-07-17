@@ -62,3 +62,27 @@ a, .btn-link {
     .blazor-error-boundary::after {
         content: "An error has occurred."
     }
+
+
+/*Minesweeper Styles*/
+.minesweeper-board {
+    background-color: #c3c3c3;
+    padding: 8px;
+    display: inline-grid;
+    width: fit-content;
+    text-align: center;
+}
+
+.minesweeper-panel {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 4px;
+    margin-bottom: 4px;
+}
+
+.minesweeper-field {
+    display: inline-block;
+    width: fit-content;
+    text-align: center;
+}

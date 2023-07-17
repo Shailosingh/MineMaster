@@ -1,0 +1,278 @@
+﻿@using MinesweeperLibrary;
+@using System.Timers;
+
+<div class="minesweeper-board">
+    <div class="minesweeper-panel">
+        <div class="hstack">
+            <img src=@HundredsPlaceMine draggable="false" />
+            <img src=@TensPlaceMine draggable="false" />
+            <img src=@OnesPlaceMine draggable="false" />
+        </div>
+
+        <img src=@ResetIcon draggable="false" @onmousedown=ResetIcon_MouseDown @onmouseup=ResetIcon_MouseUp @onmouseout=ResetIcon_MouseLost />
+        
+        <div class="hstack">
+            <img src=@TimerHundredsPlace draggable="false" />
+            <img src=@TimerTensPlace draggable="false" />
+            <img src=@TimerOnesPlace draggable="false" />
+        </div>
+    </div>
+    
+    <div class="minesweeper-field">
+        @for (int rowIndex = 0; rowIndex < Rows; rowIndex++)
+        {
+            <div class="hstack">
+                @for (int colIndex = 0; colIndex < Cols; colIndex++)
+                {
+                    <img src=@GameGridImages[rowIndex,colIndex] draggable="false" />
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code 
+{
+    [Parameter]
+    public int Rows { get; set; } = 16;
+    [Parameter]
+    public int Cols { get; set; } = 16;
+    [Parameter]
+    public int NumMines { get; set; } = 40;
+
+    //Enums for image codes
+    private enum GridImageCodes
+    {
+        INVALID_COORD = -1,
+        CLICKED,
+        ONE,
+        TWO,
+        THREE,
+        FOUR,
+        FIVE,
+        SIX,
+        SEVEN,
+        EIGHT,
+        FLAGGED,
+        HIGHLIGHTED,
+        MINE,
+        HIDDEN
+    }
+    private enum ResetImageCodes
+    {
+        DEAD,
+        OFACE,
+        SMILE,
+        SMILE_CLICKED,
+        SUNGLASSES
+    }
+
+    //Dictionaries to map codes to images
+    private Dictionary<int, string> GridImageMap = new Dictionary<int, string>();
+    private Dictionary<int, string> DisplayImageMap = new Dictionary<int, string>();
+    private Dictionary<ResetImageCodes, string> ResetImageMap = new Dictionary<ResetImageCodes, string>();
+
+    //Mine panel images
+    private string HundredsPlaceMine = "";
+    private string TensPlaceMine = "";
+    private string OnesPlaceMine = "";
+
+    //Timer panel images and info
+    private System.Timers.Timer GameClock = new System.Timers.Timer();
+    private object TimerCounterLock = new object();
+    private bool TimerRunning = false;
+    private int TimerCounter = 0;
+    private string TimerHundredsPlace = "";
+    private string TimerTensPlace = "";
+    private string TimerOnesPlace = "";
+    private string ResetIcon = "";
+
+    //Mouse position states
+    private bool LeftClickDown = false;
+    private bool RightClickDown = false;
+    private bool MiddleClickDown = false;
+
+    //Private datafields
+    private Board GameBoard = new Board(16, 16, 40);
+    private string[,] GameGridImages = new string[16, 16];
+
+    private void InitializeImageDictionaries()
+    {
+        //Fill the GridImageMap
+        GridImageMap.Add((int)GridImageCodes.CLICKED, "images/Grid/highlight.bmp");
+        GridImageMap.Add((int)GridImageCodes.ONE, "images/Grid/1.bmp");
+        GridImageMap.Add((int)GridImageCodes.TWO, "images/Grid/2.bmp");
+        GridImageMap.Add((int)GridImageCodes.THREE, "images/Grid/3.bmp");
+        GridImageMap.Add((int)GridImageCodes.FOUR, "images/Grid/4.bmp");
+        GridImageMap.Add((int)GridImageCodes.FIVE, "images/Grid/5.bmp");
+        GridImageMap.Add((int)GridImageCodes.SIX, "images/Grid/6.bmp");
+        GridImageMap.Add((int)GridImageCodes.SEVEN, "images/Grid/7.bmp");
+        GridImageMap.Add((int)GridImageCodes.EIGHT, "images/Grid/8.bmp");
+        GridImageMap.Add((int)GridImageCodes.FLAGGED, "images/Grid/flag.bmp");
+        GridImageMap.Add((int)GridImageCodes.HIGHLIGHTED, "images/Grid/highlight.bmp");
+        GridImageMap.Add((int)GridImageCodes.MINE, "images/Grid/mine.bmp");
+        GridImageMap.Add((int)GridImageCodes.HIDDEN, "images/Grid/cell.bmp");
+
+        //Fill the DisplayImageMap
+        DisplayImageMap.Add(0, "images/Display/0.png");
+        DisplayImageMap.Add(1, "images/Display/1.png");
+        DisplayImageMap.Add(2, "images/Display/2.png");
+        DisplayImageMap.Add(3, "images/Display/3.png");
+        DisplayImageMap.Add(4, "images/Display/4.png");
+        DisplayImageMap.Add(5, "images/Display/5.png");
+        DisplayImageMap.Add(6, "images/Display/6.png");
+        DisplayImageMap.Add(7, "images/Display/7.png");
+        DisplayImageMap.Add(8, "images/Display/8.png");
+        DisplayImageMap.Add(9, "images/Display/9.png");
+
+        //Fill the ResetImageMap
+        ResetImageMap.Add(ResetImageCodes.DEAD, "images/Reset/dead.bmp");
+        ResetImageMap.Add(ResetImageCodes.OFACE, "images/Reset/oface.bmp");
+        ResetImageMap.Add(ResetImageCodes.SMILE, "images/Reset/smile.bmp");
+        ResetImageMap.Add(ResetImageCodes.SMILE_CLICKED, "images/Reset/smileClicked.bmp");
+        ResetImageMap.Add(ResetImageCodes.SUNGLASSES, "images/Reset/sunglasses.bmp");
+    }
+
+    protected override void OnInitialized()
+    {
+        InitializeImageDictionaries();
+
+        //Spinup timer
+        GameClock = new System.Timers.Timer();
+        GameClock.Interval = 1000;
+        GameClock.Elapsed += GameClock_Elapsed;
+        GameClock.AutoReset = true;
+        GameClock.Enabled = true;
+        UpdateClockDisplay();
+
+        
+        ResetIcon = ResetImageMap[ResetImageCodes.SMILE];
+    }
+
+    protected override void OnParametersSet()
+    {
+        GameBoard = new Board(Rows, Cols, NumMines);
+        GameGridImages = new string[Rows, Cols];
+        RepaintBoard();
+    }
+
+    private void RepaintBoard()
+    {
+        //Update the reset icon
+        if(GameBoard.GameIsWon())
+        {
+            ResetIcon = ResetImageMap[ResetImageCodes.SUNGLASSES];
+            TimerRunning = false;
+        }
+
+        else if (GameBoard.GameIsLost())
+        {
+            ResetIcon = ResetImageMap[ResetImageCodes.DEAD];
+            TimerRunning = false;
+        }
+
+        else
+        {
+            ResetIcon = ResetImageMap[ResetImageCodes.SMILE];
+        }
+
+        //Paint grid
+        for (int rowIndex = 0; rowIndex < Rows; rowIndex++)
+        {
+            for (int colIndex = 0; colIndex < Cols; colIndex++)
+            {
+                GameGridImages[rowIndex, colIndex] = GridImageMap[GameBoard.CellVisualStatus(rowIndex, colIndex)];
+            }
+        }
+
+        //Paint panel
+        UpdateMineDisplay();
+    }
+
+    private void GameClock_Elapsed(object? sender, ElapsedEventArgs e)
+    {
+        if (TimerRunning)
+        {
+            lock (TimerCounterLock)
+            {
+                TimerCounter++;
+
+                //Ensure that the timer doesn't exceed 999
+                if (TimerCounter > 999)
+                {
+                    TimerCounter = 999;
+                }
+            }
+        }
+
+        UpdateClockDisplay();
+    }
+
+    private void UpdateClockDisplay()
+    {
+        //Calculate numbers for each place value of clock display
+        int tempCounter = TimerCounter;
+        int timerHundredsPlace = tempCounter / 100;
+        tempCounter -= timerHundredsPlace * 100;
+        int timerTensPlace = tempCounter / 10;
+        tempCounter -= timerTensPlace * 10;
+        int timerOnesPlace = tempCounter;
+
+        //Set the image for each place value
+        TimerHundredsPlace = DisplayImageMap[timerHundredsPlace];
+        TimerTensPlace = DisplayImageMap[timerTensPlace];
+        TimerOnesPlace = DisplayImageMap[timerOnesPlace];
+    }
+
+    private void UpdateMineDisplay()
+    {
+        //Get remaining number of mines
+        int remainingMines = GameBoard.RemainingFlags;
+        if (remainingMines < 0)
+        {
+            remainingMines = 0;
+        }
+
+        //Update display
+        int hundredsPlace = remainingMines / 100;
+        HundredsPlaceMine = DisplayImageMap[hundredsPlace];
+        remainingMines -= hundredsPlace * 100;
+        int tensPlace = remainingMines / 10;
+        TensPlaceMine = DisplayImageMap[tensPlace];
+        remainingMines -= tensPlace * 10;
+        int onesPlace = remainingMines;
+        OnesPlaceMine = DisplayImageMap[onesPlace];
+    }
+
+    //Event Handlers-------------------------------------------------------------------------------
+    private void ResetIcon_MouseDown(MouseEventArgs e)
+    {
+        //Check if left mouse button was clicked
+        if (e.Button == 0)
+        {
+            ResetIcon = ResetImageMap[ResetImageCodes.SMILE_CLICKED];
+            LeftClickDown = true;
+        }
+    }
+
+    private void ResetIcon_MouseUp(MouseEventArgs e)
+    {
+        //Ensure if the left mouse button was released, then reset the board and repaint it
+        if (LeftClickDown)
+        {
+            GameBoard.Reset();
+            RepaintBoard();
+            LeftClickDown = false;
+        }
+    }
+
+    private void ResetIcon_MouseLost(MouseEventArgs e)
+    {
+        //If the reset icon was being clicked, but the mouse left the icon, then reset the icon
+        if (LeftClickDown)
+        {
+            ResetIcon = ResetImageMap[ResetImageCodes.SMILE];
+            LeftClickDown = false;
+        }
+    }
+}
