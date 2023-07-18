@@ -209,9 +209,12 @@
                     TimerCounter = 999;
                 }
             }
-        }
 
-        UpdateClockDisplay();
+            UpdateClockDisplay();
+
+            //Needed so the UI updates, even if the mouse isn't moving over the component
+            InvokeAsync(StateHasChanged);
+        }
     }
 
     private void UpdateClockDisplay()
