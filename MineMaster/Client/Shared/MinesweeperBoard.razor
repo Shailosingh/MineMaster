@@ -18,7 +18,7 @@
         </div>
     </div>
     
-    <div class="minesweeper-field vstack">
+    <div class="minesweeper-field vstack" @onmouseleave=Grid_MouseLost>
         @for (int rowIndex = 0; rowIndex < Rows; rowIndex++)
         {
             <div class="hstack">
@@ -30,7 +30,8 @@
                     draggable="false"
                     @onmousedown=@(e => Cell_MouseDown(e, currentRow,currentCol))
                     @onmouseup=@(e => Cell_MouseUp(e, currentRow,currentCol))
-                    @onmouseout=@(e => Cell_MouseLost(e, currentRow,currentCol))/>
+                    @onmouseover=@(e => Cell_MouseEnter(e, currentRow,currentCol))
+                    @onmouseleave=@(e => Cell_MouseLost(e, currentRow,currentCol))/>
                 }
             </div>
         }
@@ -250,6 +251,14 @@
     }
 
     //Event Handlers-------------------------------------------------------------------------------
+    private void Grid_MouseLost(MouseEventArgs e)
+    {
+        LeftClickDown = false;
+        RightClickDown = false;
+        MiddleClickDown = false;
+        RepaintBoard();
+    }
+
     private void ResetIcon_MouseDown(MouseEventArgs e)
     {
         //Check if left mouse button was clicked
@@ -315,6 +324,15 @@
         {
             RightClickDown = true;
         }
+
+        //Handle middle click holds
+        else if (e.Button == 1)
+        {
+            //Console.WriteLine("Middle click held");
+            GameBoard.BothClickHoldDown(rowIndex, colIndex);
+            RepaintBoard();
+            MiddleClickDown = true;
+        }
     }
 
     private void Cell_MouseUp(MouseEventArgs e, int rowIndex, int colIndex)
@@ -342,12 +360,39 @@
             RightClickDown = false;
         }
 
+        //Handle the middle clicks (middle click was held and now is not)
+        else if (MiddleClickDown && ((e.Buttons & 4) == 0))
+        {
+            //Console.WriteLine("Middle click released");
+            GameBoard.BothClickRelease(rowIndex, colIndex);
+            MiddleClickDown = false;
+        }
+
         //Repaint the board
         RepaintBoard();
     }
 
+    private void Cell_MouseEnter(MouseEventArgs e, int rowIndex, int colIndex)
+    {
+        //Console.WriteLine($"Enter cell ({rowIndex}, {colIndex})");
+        //Don't do anything if someone tries to click the grid when the game is no longer running
+        if (!GameBoard.GameStillRunning())
+        {
+            return;
+        }
+
+        //If the middle button is down, then handle it
+        if(MiddleClickDown)
+        {
+            //Console.WriteLine("Middle button down on enter");
+            GameBoard.BothClickHoldDown(rowIndex, colIndex);
+            RepaintBoard();
+        }
+    }
+
     private void Cell_MouseLost(MouseEventArgs e, int rowIndex, int colIndex)
     {
+        //Console.WriteLine($"Exit cell ({rowIndex}, {colIndex})");
         //Don't do anything if someone tries to click the grid when the game is no longer running
         if (!GameBoard.GameStillRunning())
         {
@@ -369,6 +414,13 @@
         else if(RightClickDown)
         {
             RightClickDown = false;
+        }
+
+        //Cancel the middle click but keep the variable on
+        else if (MiddleClickDown)
+        {
+            GameBoard.BothClickHoldDownCancel(rowIndex, colIndex);
+            RepaintBoard();
         }
     }
 
