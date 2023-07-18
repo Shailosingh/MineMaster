@@ -1,7 +1,7 @@
 ﻿@using MinesweeperLibrary;
 @using System.Timers;
 
-<div class="minesweeper-board">
+<div class="minesweeper-board" oncontextmenu="return false;">
     <div class="minesweeper-panel">
         <div class="hstack">
             <img src=@HundredsPlaceMine draggable="false" />
@@ -18,13 +18,19 @@
         </div>
     </div>
     
-    <div class="minesweeper-field">
+    <div class="minesweeper-field vstack">
         @for (int rowIndex = 0; rowIndex < Rows; rowIndex++)
         {
             <div class="hstack">
                 @for (int colIndex = 0; colIndex < Cols; colIndex++)
                 {
-                    <img src=@GameGridImages[rowIndex,colIndex] draggable="false" />
+                    int currentRow = rowIndex;
+                    int currentCol = colIndex;
+                    <img src=@GameGridImages[currentRow,currentCol]
+                    draggable="false"
+                    @onmousedown=@(e => Cell_MouseDown(e, currentRow,currentCol))
+                    @onmouseup=@(e => Cell_MouseUp(e, currentRow,currentCol))
+                    @onmouseout=@(e => Cell_MouseLost(e, currentRow,currentCol))/>
                 }
             </div>
         }
@@ -138,14 +144,13 @@
         InitializeImageDictionaries();
 
         //Spinup timer
-        GameClock = new System.Timers.Timer();
-        GameClock.Interval = 1000;
+        GameClock = new System.Timers.Timer(1000);
         GameClock.Elapsed += GameClock_Elapsed;
         GameClock.AutoReset = true;
         GameClock.Enabled = true;
         UpdateClockDisplay();
 
-        
+
         ResetIcon = ResetImageMap[ResetImageCodes.SMILE];
     }
 
@@ -264,6 +269,14 @@
             RepaintBoard();
             LeftClickDown = false;
         }
+
+        //Stop the timer and reset the timer counter
+        TimerRunning = false;
+        lock (TimerCounterLock)
+        {
+            TimerCounter = 0;
+        }
+        UpdateClockDisplay();
     }
 
     private void ResetIcon_MouseLost(MouseEventArgs e)
@@ -275,4 +288,90 @@
             LeftClickDown = false;
         }
     }
+
+    private void Cell_MouseDown(MouseEventArgs e, int rowIndex, int colIndex)
+    {
+        //Don't do anything if someone tries to click the grid when the game is no longer running
+        if (!GameBoard.GameStillRunning())
+        {
+            return;
+        }
+
+        //Handle left click holds
+        if (e.Button == 0)
+        {
+            //Ensure that the cell isn't already clicked in some way
+            if (GameBoard.CellVisualStatus(rowIndex, colIndex) == (int)GridImageCodes.HIDDEN)
+            {
+                GameGridImages[rowIndex, colIndex] = GridImageMap[(int)GridImageCodes.CLICKED];
+                ResetIcon = ResetImageMap[ResetImageCodes.OFACE];
+            }
+
+            LeftClickDown = true;
+        }
+
+        //Handle right click holds
+        else if(e.Button == 2)
+        {
+            RightClickDown = true;
+        }
+    }
+
+    private void Cell_MouseUp(MouseEventArgs e, int rowIndex, int colIndex)
+    {
+        //Don't do anything if someone tries to click the grid when the game is no longer running
+        if (!GameBoard.GameStillRunning())
+        {
+            return;
+        }
+
+        //Handle the left clicks (left click was held and now is not)
+        if (LeftClickDown && ((e.Buttons & 1) == 0))
+        {
+            GameBoard.LeftClick(rowIndex, colIndex);
+            LeftClickDown = false;
+
+            //Ensure timer is on
+            TimerRunning = true;
+        }
+
+        //Handle the right clicks (right click was held and now is not)
+        else if (RightClickDown && ((e.Buttons & 2) == 0))
+        {
+            GameBoard.RightClick(rowIndex, colIndex);
+            RightClickDown = false;
+        }
+
+        //Repaint the board
+        RepaintBoard();
+    }
+
+    private void Cell_MouseLost(MouseEventArgs e, int rowIndex, int colIndex)
+    {
+        //Don't do anything if someone tries to click the grid when the game is no longer running
+        if (!GameBoard.GameStillRunning())
+        {
+            return;
+        }
+
+        //Cancel the left click
+        if(LeftClickDown)
+        {
+            GameGridImages[rowIndex, colIndex] = GridImageMap[GameBoard.CellVisualStatus(rowIndex, colIndex)];
+
+            //Reset the reset icon
+            ResetIcon = ResetImageMap[ResetImageCodes.SMILE];
+
+            LeftClickDown = false;
+        }
+
+        //Cancel the right click
+        else if(RightClickDown)
+        {
+            RightClickDown = false;
+        }
+    }
+
+    //TODO: https://learn.microsoft.com/en-us/aspnet/core/blazor/components/event-handling?view=aspnetcore-7.0
+    //Custom event arguments using Lambda Expressions
 }
