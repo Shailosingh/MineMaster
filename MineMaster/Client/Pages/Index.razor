@@ -1,11 +1,123 @@
 ﻿@page "/"
+@using MinesweeperLibrary;
 
 <PageTitle>Index</PageTitle>
 
-<h1>Hello, world!</h1>
+<div class="vstack gap-2 align-items-center">
+    <div class="minesweeper-panel gap-2">
+        <div class="form-outline">
+            <label class="form-label">Number of Rows: @RowInput</label>
+            <input type="number" class="form-control" value="@RowInput" @onchange=OnRowChange/>
+        </div>
 
-Welcome to your new app.
+        <div class="form-outline">
+            <label class="form-label">Number of Columns: @ColInput</label>
+            <input type="number" class="form-control" value="@ColInput" @onchange=OnColChange />
+        </div>
 
-<br />
+        <div class="form-outline">
+            <label class="form-label">Number of Mines: @MineInput</label>
+            <input type="number" class="form-control" value="@MineInput" @onchange=OnMineChange />
+        </div>
+    </div>
 
-<MinesweeperBoard Rows="16" Cols="16" NumMines="40" />
+    <MinesweeperBoard Rows=@ValidatedRows Cols=@ValidatedCols NumMines=@ValidatedMines />
+</div>
+
+@code
+{
+    private int RowInput = 16;
+    private int ColInput = 16;
+    private int MineInput = 40;
+
+    private int ValidatedRows = 16;
+    private int ValidatedCols = 16;
+    private int ValidatedMines = 40;
+
+    void OnRowChange(ChangeEventArgs e)
+    {
+        //Set the RowInput (MIN_ROWS if null)
+        if (e.Value != null && int.TryParse(e.Value.ToString(), out int result))
+        {
+            RowInput = result;
+        }
+        else
+        {
+            RowInput = (int)Board.MIN_ROWS;
+        }
+
+        //Fix the RowInput
+        if(RowInput < Board.MIN_ROWS)
+        {
+            RowInput = (int)Board.MIN_ROWS;
+        }
+        else if (RowInput > Board.MAX_ROWS)
+        {
+            RowInput = (int)Board.MAX_ROWS;
+        }
+
+        //Ensure that the number of mines is valid
+        if (MineInput >= RowInput * ColInput)
+        {
+            MineInput = RowInput * ColInput -1;
+        }
+
+        //Update the number of rows
+        ValidatedRows = RowInput;
+        InvokeAsync(StateHasChanged);
+    }
+
+    void OnColChange(ChangeEventArgs e)
+    {
+        //Set the ColInput 
+        if (e.Value != null && int.TryParse(e.Value.ToString(), out int result))
+        {
+            ColInput = result;
+        }
+        else
+        {
+            ColInput = (int)Board.MIN_COLS;
+        }
+        
+        //Fix the ColInput
+        if (ColInput < Board.MIN_COLS)
+        {
+            ColInput = (int)Board.MIN_COLS;
+        }
+        else if (ColInput > Board.MAX_COLS)
+        {
+            ColInput = (int)Board.MAX_COLS;
+        }
+
+        //Ensure that the number of mines is valid
+        if (MineInput >= RowInput * ColInput)
+        {
+            MineInput = RowInput * ColInput - 1;
+        }
+
+        //Update the number of columns
+        ValidatedCols = ColInput;
+    }
+
+    void OnMineChange(ChangeEventArgs e)
+    {
+        //Set the MineInput 
+        if (e.Value != null && int.TryParse(e.Value.ToString(), out int result))
+        {
+            MineInput = result;
+        }
+        else
+        {
+            MineInput = 1;
+        }
+
+        //Fix the MineInput
+        if(MineInput >= (RowInput*ColInput))
+        {
+            MineInput = RowInput * ColInput - 1;
+        }
+
+        //Update the number of mines
+        ValidatedMines = MineInput;
+    }
+}
