@@ -1,5 +1,6 @@
 # MineMaster
 ![Logo](https://github.com/Shailosingh/MineMaster/assets/52577016/2cb4c45e-9962-4edb-a0c0-6c377491aa29)
+
 Enjoy a free remake of the old Minesweeper you know and love from Windows XP. This remake is free of ads and offers hours of fun.
 
 ## Controls
